@@ -16,7 +16,7 @@ Chromeで表示しているWeb画面を取り込み、変更案を検討するMa
 
 Apple Silicon搭載のMacとGoogle Chromeが必要です。macOSの対応バージョンは別のMacでの検証後に案内します。Intel MacとWindowsは未検証です。
 
-画面の取り込み、保存、履歴比較にはClaude Codeは必要ありません。AI編集には利用者自身がインストール・認証した[Claude Code](https://code.claude.com/docs/en/setup)と、その利用条件を満たす契約が必要です。ScreenDraftの利用料とAIの利用料は別です。
+画面の取り込み、保存、履歴比較にはClaude Codeは必要ありません。AI編集には利用者自身がインストール・認証した[Claude Code](https://code.claude.com/docs/ja/setup)が必要です。ScreenDraftはインストール済みのClaude Codeを起動します。利用条件は[Claude Codeの公式ガイド](https://code.claude.com/docs/en/legal-and-compliance)を確認してください。AIの利用料は利用者自身の契約に従います。
 
 ## インストール
 
