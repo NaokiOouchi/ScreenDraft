@@ -1,0 +1,2 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {clampInspectorWidth} from '../src/workspace-layout.js';
+test('inspector respects readable bounds and preserves comparison space on supported narrow windows',()=>{assert.equal(clampInspectorWidth(500,1440,88),420);assert.equal(clampInspectorWidth(100,1440,88),280);assert.equal(clampInspectorWidth(420,1100,224),356);assert.equal(clampInspectorWidth(320,1280,88),320);assert.equal(clampInspectorWidth(Number.NaN,1280,88),320);});

@@ -1,0 +1,1 @@
+export async function manageApi(path:string,method:string,body?:unknown){const response=await fetch('/api'+path,{method,...(body===undefined?{}:{headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})});const value=await response.json();if(!response.ok)throw new Error(value.error||'操作できませんでした。');return value;}

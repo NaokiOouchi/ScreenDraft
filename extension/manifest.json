@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "ScreenDraft — 画面の取り込み",
+  "version": "0.2.10",
+  "description": "Chromeで表示中の画面をScreenDraftに取り込みます。取り込んだ画面はAIで編集できます。",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ScreenDraftに取り込む"
+  }
+}
