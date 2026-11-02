@@ -10,8 +10,18 @@ app.setPath('sessionData',legacyUserData);
 app.setName('ScreenDraft');
 let workState={working:false,pending:false,unsaved:false},quitConfirmed=false,confirmingQuit=false;
 let window,backend,origin='',quitting=false,stopped=false,started=false,startupPort=null,recovering=false;
+let updating=false,updateInstallStarted=false,startupUpdateCheck=false;
+function finishUpdate(){if(updateInstallStarted)return;updateInstallStarted=true;autoUpdater.quitAndInstall();}
+const {autoUpdater}=require('electron-updater');
+const {createUpdateController}=require('./updates.cjs');
+const updates=createUpdateController(autoUpdater,{enabled:app.isPackaged,onChange:state=>{window?.webContents.send('screendraft:update-state',state);if(startupUpdateCheck&&state.status==='available'&&window){startupUpdateCheck=false;void dialog.showMessageBox(window,{type:'info',title:'ScreenDraftの更新',message:'新しいバージョンがあります',detail:'設定の「アプリ情報」から更新できます。',buttons:['閉じる']});}else if(['current','error'].includes(state.status))startupUpdateCheck=false;}});
+
 const settingsFile=()=>join(app.getPath('userData'),'connection-settings.json');
 function trustedAction(event){return window&&event.sender===window.webContents&&allowDesktopAction(event.senderFrame?.url,event.senderFrame===window.webContents.mainFrame,origin);}
+ipcMain.handle('screendraft:update-state',event=>{if(!trustedAction(event))throw Error('この画面からは操作できません。');return updates.state();});
+ipcMain.handle('screendraft:update-check',async event=>{if(!trustedAction(event))throw Error('この画面からは操作できません。');await updates.check();return updates.state();});
+ipcMain.handle('screendraft:update-download',async event=>{if(!trustedAction(event))throw Error('この画面からは操作できません。');await updates.download();return updates.state();});
+ipcMain.handle('screendraft:update-install',event=>{if(!trustedAction(event))throw Error('この画面からは操作できません。');if(!updates.canInstall(workState))throw Error('作業を保存または終了してから更新してください。');updating=true;if(backend&&!stopped){backend.postMessage({type:'stop'});}else finishUpdate();return {ok:true};});
 function portState(port){return {port,activePort:Number(new URL(origin).port),restartRequired:port!==startupPort};}
 ipcMain.handle('change-note:get-port-settings',async event=>{if(!trustedAction(event))throw new Error('この画面からは操作できません。');return portState((await readSettings(settingsFile())).port);});
 ipcMain.handle('change-note:set-port-settings',async(event,value)=>{if(!trustedAction(event))throw new Error('この画面からは操作できません。');return portState((await writeSettings(settingsFile(),value)).port);});
@@ -50,7 +60,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
   backend=utilityProcess.fork(join(app.getAppPath(),'dist-desktop/backend.cjs'),[],{env:{...process.env,PATH:desktopPath(process.env.PATH,homedir()),CHANGE_NOTE_PORT:JSON.stringify(startupPort),CHANGE_NOTE_DATA_DIR:dataDir(),CHANGE_NOTE_RESOURCE_ROOT:app.getAppPath()},stdio:'pipe',serviceName:'ScreenDraft ローカル保存'});
   let timer;const armTimeout=()=>{clearTimeout(timer);timer=setTimeout(()=>fail('ローカル保存の起動が時間内に完了しませんでした。'),30000);};armTimeout();
   backend.on('message',async message=>{
-   if(message.type==='ready'){clearTimeout(timer);started=true;origin='http://127.0.0.1:'+message.port;openWindow();}
+   if(message.type==='ready'){clearTimeout(timer);started=true;origin='http://127.0.0.1:'+message.port;openWindow();if(app.isPackaged){startupUpdateCheck=true;void updates.check();}}
    else if(message.type==='failed'){
     clearTimeout(timer);if(recovering)return;
     if(message.code!=='EADDRINUSE'){fail('ローカル保存を起動できません。空き容量・書き込み権限・接続ポートを確認してください。');return;}
@@ -61,9 +71,9 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
      if(choice.response!==0){app.quit();return;}
      await writeSettings(settingsFile(),{port:null});startupPort=null;armTimeout();backend.postMessage({type:'retry-auto'});
     }catch{fail('自動設定への変更に失敗しました。保存先の書き込み権限を確認してください。');}finally{recovering=false;}
-   }else if(message.type==='stopped'){stopped=true;app.quit();}
+   }else if(message.type==='stopped'){stopped=true;if(updating)finishUpdate();else app.quit();}
   });
-  backend.on('exit',()=>{clearTimeout(timer);stopped=true;if(quitting)app.quit();else fail(started?'ローカル保存が停止しました。アプリを開き直してください。':'ローカル保存を起動できませんでした。');});
+  backend.on('exit',()=>{clearTimeout(timer);stopped=true;if(updating)finishUpdate();else if(quitting)app.quit();else fail(started?'ローカル保存が停止しました。アプリを開き直してください。':'ローカル保存を起動できませんでした。');});
   // Development logs only: never include user captures, prompts, or credentials.
   if(!app.isPackaged){backend.stderr?.on('data',data=>console.error(String(data)));backend.stdout?.on('data',data=>console.log(String(data)));}
  }).catch(()=>fail('アプリの初期化に失敗しました。'));

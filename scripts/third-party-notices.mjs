@@ -30,7 +30,10 @@ export async function generateNotices(root) {
     if (!files.length && pkg.name === 'abstract-logging' && pkg.version === '2.0.1') {
       files.push(['abstract-logging-MIT.txt', await readFile(join(root, 'licenses/third-party/abstract-logging-MIT.txt'), 'utf8')])
     }
-    if (!files.some(([name]) => /^(?:licen[sc]e|copying|.*\/licen[sc]e|abstract-logging-MIT)/i.test(name))) {
+    if (!files.length && pkg.name === 'lazy-val' && pkg.version === '1.0.5') {
+      files.push(['lazy-val-MIT.txt', await readFile(join(root, 'licenses/third-party/lazy-val-MIT.txt'), 'utf8')])
+    }
+    if (!files.some(([name]) => /^(?:licen[sc]e|copying|.*\/licen[sc]e|abstract-logging-MIT|lazy-val-MIT)/i.test(name))) {
       missing.push(`${pkg.name}@${pkg.version}`)
       continue
     }

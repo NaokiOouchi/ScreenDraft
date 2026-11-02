@@ -56,7 +56,7 @@ try {
   run('xcrun', ['stapler', 'staple', app])
   run('xcrun', ['stapler', 'validate', app])
   run(join(root, 'node_modules/.bin/electron-builder'), [
-    '--config', 'electron-builder.signed.cjs', '--prepackaged', app, '--mac', 'dmg', '--arm64',
+    '--config', 'electron-builder.signed.cjs', '--prepackaged', app, '--mac', 'dmg', 'zip', '--arm64', '--publish', 'never',
   ])
   const dmgResult = notarize(dmg)
   run('xcrun', ['stapler', 'staple', dmg])
