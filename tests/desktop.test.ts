@@ -1,6 +1,12 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,mkdir,writeFile,rm}from'node:fs/promises';import {tmpdir}from'node:os';import {join}from'node:path';import {createApp}from'../server/app.js';
 // @ts-ignore desktop helper is shared with Electron main
 import {desktopPath,allowedAppNavigation,allowPermission,listenLocal}from'../desktop/runtime.cjs';
+test('desktop PATH includes version-manager shims and preserves inherited priority',()=>{
+ const paths=desktopPath('/custom/bin:/usr/bin','/Users/test').split(':');
+ assert.ok(paths.indexOf('/custom/bin')<paths.indexOf('/Users/test/.local/bin'));
+ for(const path of ['.local/share/mise/shims','.asdf/shims','.volta/bin','.bun/bin','.nvm/current/bin','.fnm/current/bin'])assert.ok(paths.includes('/Users/test/'+path),path);
+ assert.equal(paths.filter((path:string)=>path==='/usr/bin').length,1);
+});
 test('desktop isolates app navigation and discovers standard native Claude install paths',()=>{
  assert.ok(desktopPath('/usr/bin','/Users/test').split(':').includes('/Users/test/.local/bin'));assert.ok(desktopPath('/usr/bin','/Users/test').includes('/opt/homebrew/bin'));
  assert.equal(allowedAppNavigation('http://127.0.0.1:4175/?proposal=x','http://127.0.0.1:4175'),true);for(const url of ['https://evil.test','http://127.0.0.1:4175/api/session','http://127.0.0.1:4175/sample/users','file:///tmp/a','javascript:alert(1)'])assert.equal(allowedAppNavigation(url,'http://127.0.0.1:4175'),false);
