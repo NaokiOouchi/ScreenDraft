@@ -32,3 +32,21 @@ test('フレーム内の右ドラッグは選択操作と分離し、解放・�
  emit('pointerdown');emit('pointermove',{buttons:0});assert.equal(messages.at(-1).data.phase,'end');
  emit('pointerdown');for(const f of windowEvents.blur)f({});assert.equal(messages.at(-1).data.phase,'end');
 });
+
+test('表のセルを選択した後にテーブル全体へ範囲を広げられる',()=>{
+ const messages:any[]=[],events:Record<string,(e:any)=>void>={};let receive:(e:any)=>void=()=>{};
+ const box=()=>({style:{},append(){},setAttribute(){},attachShadow:()=>({replaceChildren(){},append(){}})});
+ const table:any={tagName:'TABLE',textContent:'一覧',parentElement:null};
+ const cell:any={tagName:'TD',textContent:'山田',parentElement:table};
+ for(const [node,id] of [[table,'table'],[cell,'cell']] as const){node.getAttribute=(name:string)=>name==='data-cn-id'?id:null;node.hasAttribute=(name:string)=>name==='data-cn-id';node.getBoundingClientRect=()=>({left:0,top:10,width:100,height:20});node.contains=(other:any)=>node===other||(node===table&&other===cell);}
+ cell.closest=(selector:string)=>selector.startsWith('table')?table:cell;
+ const parent={postMessage:(m:any)=>messages.push(m)};
+ const document={createElement:box,documentElement:{append(){}},querySelector:(selector:string)=>selector.includes('"cell"')?cell:selector.includes('"table"')?table:null,addEventListener:(type:string,fn:(e:any)=>void)=>{events[type]=fn;}};
+ const script=editorPreview('<body></body>','table-test').html.match(/<script>([\s\S]*)<\/script>/)![1];
+ runInNewContext(script,{document,parent,window:{addEventListener:(type:string,fn:(e:any)=>void)=>{if(type==='message')receive=fn;}},CSS:{escape:(s:string)=>s},requestAnimationFrame:(f:()=>void)=>f()});
+ receive({source:parent,data:{channel:'table-test',type:'mode',data:true}});
+ events.click({target:cell,shiftKey:false,preventDefault(){},stopImmediatePropagation(){}});
+ assert.equal(messages.at(-1).data[0].id,'cell');assert.equal(messages.at(-1).data[0].ancestors[0].id,'table');
+ receive({source:parent,data:{channel:'table-test',type:'pick',data:'table'}});
+ assert.equal(messages.at(-1).data[0].id,'table');
+});
